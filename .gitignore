@@ -1,1 +1,12 @@
+# Kubeconfig
 kubeconfig
+
+# Secret related stuffs
+credentials.yaml
+credentials.yml
+credential.yaml
+credential.yml
+
+# Terraform related stuffs
+.terraform*
+terraform.tfstate*

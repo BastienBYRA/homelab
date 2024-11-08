@@ -1,0 +1,25 @@
+# https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/ovh.md
+extraArgs:
+  - --source=service
+  - --domain-filter=bastienbyra.fr
+
+provider:
+  # -- _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers).
+  name: ovh
+
+env:
+  - name: OVH_APPLICATION_KEY
+    valueFrom:
+      secretKeyRef:
+        name: external-dns-secret
+        key: OVH_APPLICATION_KEY
+  - name: OVH_APPLICATION_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: external-dns-secret
+        key: OVH_APPLICATION_SECRET
+  - name: OVH_CONSUMER_KEY
+    valueFrom:
+      secretKeyRef:
+        name: external-dns-secret
+        key: OVH_CONSUMER_KEY
