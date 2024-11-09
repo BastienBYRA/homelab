@@ -1,0 +1,6 @@
+image:
+  name: 8271/bbyra-website
+  version: v1.0.3
+
+dns: blog.bastienbyra.fr
+dns_record: blog.bastienbyra.fr.

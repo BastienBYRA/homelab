@@ -1,0 +1,70 @@
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog-deployment
+  labels:
+    app: blog
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blog
+  template:
+    metadata:
+      labels:
+        app: blog
+    spec:
+      containers:
+      - name: blog
+        image: "{{ .Values.image.name }}:{{ .Values.image.version }}"
+        env:
+        - name: DNS_NAME
+          value: "{{ .Values.dns }}"
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 443
+          name: https
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: blog-service
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: "{{ .Values.dns_record }}"
+    external-dns.alpha.kubernetes.io/ttl: "120"
+spec:
+  type: LoadBalancer
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 80
+  - name: https
+    protocol: TCP
+    port: 443
+    targetPort: 443
+# ---
+# # Ingress
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: blog-ingress
+#   annotations:
+#     nginx.ingress.kubernetes.io/rewrite-target: /
+#     external-dns.alpha.kubernetes.io/hostname: example.com
+#     external-dns.alpha.kubernetes.io/ttl: "120"
+# spec:
+#   ingressClassName: blog
+#   rules:
+#   - http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: blog
+#             port:
+#               number: https
