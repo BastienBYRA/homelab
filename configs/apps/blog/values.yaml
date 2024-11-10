@@ -4,3 +4,5 @@ image:
 
 dns: blog.bastienbyra.fr
 dns_record: blog.bastienbyra.fr.
+
+replicas: 2

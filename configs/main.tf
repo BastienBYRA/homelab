@@ -9,20 +9,22 @@ provider "kubernetes" {
 
 # Cilium : Pour gérer le networking du cluster (notamment la génération des external-ip)
 resource "helm_release" "cilium" {
+  # depends_on = [kubernetes_namespace.cilium_namespace]
   name              = "cilium"
   repository        = "https://helm.cilium.io/"
   chart             = "cilium"
   version           = "1.16.3"
   create_namespace  = true
   namespace         = "cilium"
-  # values            = [
-  #   "${file("./apps/cilium/values.yaml")}"
-  # ]
+  values            = [
+    "${file("./apps/cilium/values.yaml")}"
+  ]
 }
 
 ### /!\ Le secret est en mon PC local, c'est (pour l'instant)
 # Besoin d'un namespace pour assurer le namespace existe avant d'ajouter le secret dedans
 resource "kubernetes_namespace" "externaldns_namespace" {
+  depends_on = [helm_release.cilium]
   metadata {
     annotations = {
       name = "externaldns"
@@ -70,3 +72,15 @@ resource "helm_release" "blog" {
   ]
 }
 
+# ArgoCD
+# resource "helm_release" "argocd" {
+#   name              = "argocd"
+#   repository        = "https://argoproj.github.io/argo-helm"
+#   chart             = "argo-cd"
+#   version           = "7.7.0"
+#   create_namespace  = true
+#   namespace         = "argocd"
+#   values            = [
+#     "${file("./apps/argocd/values.yaml")}"
+#   ]
+# }

@@ -2,6 +2,8 @@
 
 set -e
 
+user_list=("bastien")
+
 if [ -z "$USER_PASSWORD" ]
 then
       echo "Aucun mot de passe défini pour l'utilisateur à créer, défini un mot de passe sous forme de variable d'env sur la machine !"
@@ -13,7 +15,7 @@ function create_user() {
   password=$2
 
   # Créer un utilisateur / mot de passe / home folder
-  sudo useradd $username -G docker, ssh_group, sudo
+  sudo useradd $username -G docker,ssh_group,sudo
   echo $username:$password | chpasswd         # Ajoute un mot de passe
   sudo usermod --shell /bin/bash $password         # Défini bash comme le shell par défaut
   mkdir /home/$username                       # Génère le dossier home de l'utilisateur
@@ -29,7 +31,7 @@ function generate_sshkey() {
   cat generate_key.pub >> /home/$username/.ssh/authorized_keys
 
   # C'est pas ouf niveau sécurité, mais vu que je lance ce script moi-même sur mon PC, c'est acceptable.
-  echo "Copie cette clé SSH sur ton PC :"
+  echo "⚠️ Copie cette clé SSH sur ton PC pour pouvoir accéder au serveur :"
   cat ./generate_key
 
   rm -f ./generate_key ./generate_key.pub
@@ -62,6 +64,7 @@ function hardening_ssh() {
 
   # Autoriser uniquement certains utilisateur a se connecter via SSH
   update_or_add_config AllowGroups ssh_group $sshd_config
+  echo "➜ Mise à jour la configuration SSHD pour améliorer la sécurité du serveur réussite !"
 }
 
 # Fonction pour vérifier, modifier ou ajouter une configuration
@@ -79,11 +82,25 @@ update_or_add_config() {
     fi
 }
 
+function add_kubeconfig() {
+  user=$1
+  mkdir /home/$username/.kube
+  sudo cp /etc/rancher/k3s/k3s.yaml /home/$user/.kube/config
+  sudo chown $user:$user /home/$user/.kube/config
+  echo "export KUBECONFIG=/home/$user/.kube/config" >> /home/$user/.bashrc
+  fix_owner_folder $username
+}
+
 #################################
 ####### INIT SERVER TOOLS #######
 ################################# 
 
+# Installe les outils de base
+sudo apt-get update
+sudo apt-get install -y nano curl git
+
 # Installe Docker
+echo "➜ Installation de Docker en cours !"
 sudo apt-get update
 sudo apt-get install ca-certificates curl
 sudo install -m 0755 -d /etc/apt/keyrings
@@ -94,22 +111,45 @@ echo \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update
-sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+echo "➜ Installation de Docker fini !"
 
 # Installe K3S
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='--flannel-backend=none --disable-network-policy --disable "traefik"' sh -
+echo "➜ Installation de K3S en cours !"
+curl -sfL https://get.k3s.io | sh -s - \
+  --flannel-backend=none \
+  --disable-network-policy \
+  --disable traefik
+
+# curl -sfL https://get.k3s.io | sh -s - \
+#   --flannel-backend=none \
+#   --disable-kube-proxy \
+#   --disable servicelb \
+#   --disable-network-policy \
+#   --disable traefik \
+#   --cluster-init
+echo "➜ Installation de K3S fini !"
+echo "⚠️ Copie le Kubeconfig pour pouvoir y accéder depuis ton PC :"
+cat /etc/rancher/k3s/k3s.yaml
 
 ##################################
 ######## HARDENING SERVER ########
 ##################################
 
-# Créer un groupe spécial pour les utilisateur qui pourront SSH sur le serveur
+# Créer un groupe spécial pour les utilisateurs qui pourront SSH sur le serveur
 groupadd ssh_group
 
-# Créer un utilisateur + Configuration autour de l'utilisateur
-create_user bastien $USER_PASSWORD
-generate_sshkey bastien
-
-# Modifie la configuration SSH pour le rendre plus strict
+# Update la configuration du SSHD
 hardening_ssh
+
+for user in ${user_list[@]}; do
+  # Créer un utilisateur + Configuration autour de l'utilisateur
+  echo "➜ Création de l'utilisateur $user en cours !"
+  create_user $user $USER_PASSWORD
+  generate_sshkey $user
+  add_kubeconfig $user
+  echo "➜ Création de l'utilisateur $user fini !"
+done
+
+
 

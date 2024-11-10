@@ -6,7 +6,7 @@ metadata:
   labels:
     app: blog
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicas }}
   selector:
     matchLabels:
       app: blog
@@ -36,6 +36,8 @@ metadata:
     external-dns.alpha.kubernetes.io/hostname: "{{ .Values.dns_record }}"
     external-dns.alpha.kubernetes.io/ttl: "120"
 spec:
+  selector:
+    app: blog
   type: LoadBalancer
   ports:
   - name: http
