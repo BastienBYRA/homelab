@@ -1,0 +1,17 @@
+controller:
+  appprotect:
+    enabled: true
+    v5: true
+    logLevel: info
+
+  appprotectdos:
+    enable: true
+    ## Enable debugging for App Protect DoS.
+    debug: false
+    ## Max number of nginx processes to support.
+    maxWorkers: 1
+    ## Max number of ADMD instances.
+    maxDaemons: 1
+    ## RAM memory size to consume in MB.
+    memory: 1024
+

@@ -1,6 +1,6 @@
 # https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/ovh.md
 extraArgs:
-  # - --source=service
+  - --source=service
   - --domain-filter=bastienbyra.fr
 logLevel: debug
 

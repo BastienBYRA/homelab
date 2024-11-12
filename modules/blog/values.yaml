@@ -1,8 +1,11 @@
 image:
   name: 8271/bbyra-website
-  version: v1.0.3
+  version: v1.0.4
 
 dns: blog.bastienbyra.fr
 dns_record: blog.bastienbyra.fr.
 
-replicas: 2
+replicas: 1
+
+server_ip: 107.155.122.60
+a: rgtfrrrgr

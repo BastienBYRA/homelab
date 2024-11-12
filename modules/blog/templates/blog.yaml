@@ -1,0 +1,79 @@
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog-deployment
+  labels:
+    app: blog
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: blog
+  template:
+    metadata:
+      labels:
+        app: blog
+    spec:
+      containers:
+      - name: blog
+        image: "{{ .Values.image.name }}:{{ .Values.image.version }}"
+        imagePullPolicy: Always
+        env:
+        - name: DNS_NAME
+          value: "{{ .Values.dns }}"
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 443
+          name: https
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: blog-service
+spec:
+  selector:
+    app: blog
+  type: ClusterIP
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 80
+  - name: https
+    protocol: TCP
+    port: 443
+    targetPort: 443
+---
+# Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: blog-ingress
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: "{{ .Values.dns_record }}"
+    external-dns.alpha.kubernetes.io/ttl: "120"
+    external-dns.alpha.kubernetes.io/endpoints-type: "{{ .Values.server_ip }}"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # https://stackoverflow.com/questions/65540117/getting-all-hosts-are-taken-by-other-resources-with-nginx-ingress-controller
+    acme.cert-manager.io/http01-edit-in-place: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+      - "{{ .Values.dns }}"
+    secretName: blog-tls
+  rules:
+  - host: "{{ .Values.dns }}"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: blog-service
+            port:
+              name: http

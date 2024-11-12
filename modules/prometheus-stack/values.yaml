@@ -1,0 +1,18 @@
+prometheus:
+  # service:
+  #   type: LoadBalancer
+  prometheusSpec:
+    retention: 7d
+
+grafana:
+  ingress:
+    enabled: true
+    ingressClassName: cilium
+    hosts:
+      - monitoring.bastienbyra.fr
+    annotations: {
+      external-dns.alpha.kubernetes.io/hostname: monitoring.bastienbyra.fr,
+      external-dns.alpha.kubernetes.io/ttl: "120",
+      external-dns.alpha.kubernetes.io/ingress-hostname-source: "annotation-only",
+      kubernetes.io/ingress.class: "cilium"
+    }

@@ -1,0 +1,36 @@
+ipam:
+  operator:
+    clusterPoolIPv4PodCIDRList: ["10.42.0.0/16"]
+
+# debug:
+#   enabled: true
+
+operator:
+  replicas: 1
+
+# https://docs.cilium.io/en/stable/network/servicemesh/ingress/
+nodePort:
+  enabled: true
+kubeProxyReplacement: "true"
+l7Proxy: true
+# ingressController:
+#   enabled: true
+#   loadbalancerMode: dedicated
+#   default: true
+#   annotations: {
+#     ingressclass.kubernetes.io/is-default-class: "true"
+#   }
+#   service:
+#     loadBalancerIP: 107.155.122.60
+loadBalancer:
+  l7:
+    backend: envoy
+
+
+
+
+# hubble:
+#   relay:
+#     enabled: true
+#   ui:
+#     enabled: true
