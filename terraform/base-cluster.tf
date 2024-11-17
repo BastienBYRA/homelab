@@ -171,3 +171,11 @@ resource "helm_release" "externaldns" {
 #   ]
 # }
 
+# ArgoCD
+resource "helm_release" "argocd" {
+  name       = "argocd"
+  repository = "https://argoproj.github.io/argo-helm"
+  chart      = "argo-cd"
+  create_namespace = true
+  namespace = "argocd"
+}

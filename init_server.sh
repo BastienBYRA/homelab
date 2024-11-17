@@ -120,14 +120,6 @@ curl -sfL https://get.k3s.io | sh -s - \
   --flannel-backend=none \
   --disable-network-policy \
   --disable traefik
-
-# curl -sfL https://get.k3s.io | sh -s - \
-#   --flannel-backend=none \
-#   --disable-kube-proxy \
-#   --disable servicelb \
-#   --disable-network-policy \
-#   --disable traefik \
-#   --cluster-init
 echo "➜ Installation de K3S fini !"
 echo "⚠️ Copie le Kubeconfig pour pouvoir y accéder depuis ton PC :"
 cat /etc/rancher/k3s/k3s.yaml

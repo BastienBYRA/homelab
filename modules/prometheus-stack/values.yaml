@@ -1,18 +1,22 @@
 prometheus:
-  # service:
-  #   type: LoadBalancer
   prometheusSpec:
     retention: 7d
 
 grafana:
+  # password: ${password}
   ingress:
     enabled: true
-    ingressClassName: cilium
+    ingressClassName: nginx
     hosts:
       - monitoring.bastienbyra.fr
     annotations: {
       external-dns.alpha.kubernetes.io/hostname: monitoring.bastienbyra.fr,
-      external-dns.alpha.kubernetes.io/ttl: "120",
-      external-dns.alpha.kubernetes.io/ingress-hostname-source: "annotation-only",
-      kubernetes.io/ingress.class: "cilium"
+      external-dns.alpha.kubernetes.io/ttl: "300",
+      external-dns.alpha.kubernetes.io/endpoints-type: "107.155.122.60",
+      cert-manager.io/cluster-issuer: "letsencrypt-prod",
+      acme.cert-manager.io/http01-edit-in-place: "true"
     }
+    tls:
+      - hosts:
+        - "monitoring.bastienbyra.fr"
+        secretName: kubestack-ingress-tls
