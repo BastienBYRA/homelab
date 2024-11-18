@@ -126,7 +126,49 @@ resource "argocd_application" "grafana" {
 }
 
 # Helm Loki Stack
-resource "argocd_application" "loki" {
+# resource "argocd_application" "loki" {
+#   depends_on = [argocd_application.grafana]
+#   metadata {
+#     name      = "loki"
+#     namespace = "argocd"
+#   }
+
+#   spec {
+#     destination {
+#       name = "in-cluster"
+#       namespace = "monitoring"
+
+#     }
+
+#     sync_policy {
+#         automated {
+#             self_heal = "true"
+#             prune = "true"
+#             allow_empty = "false"
+#         }
+#         sync_options = ["CreateNamespace=true"]
+#     }
+
+#     source {
+#       repo_url        = "https://grafana.github.io/helm-charts"
+#       chart           = "loki-stack"
+#       target_revision = "2.10.1"
+#       helm {
+#         release_name = "loki"
+#         value_files = ["$values/modules/monitoring/loki-stack/values.yml"]
+#       }
+#     }
+
+#     source {
+#       repo_url        = "https://github.com/BastienBYRA/homelab.git"
+#       target_revision = "feat/setup-monitoring"
+#       ref             = "values"
+#     }
+#   }
+# }
+
+# Promtail
+resource "argocd_application" "promtail" {
   depends_on = [argocd_application.grafana]
   metadata {
     name      = "loki"
@@ -137,7 +179,6 @@ resource "argocd_application" "loki" {
     destination {
       name = "in-cluster"
       namespace = "monitoring"
-
     }
 
     sync_policy {
@@ -151,11 +192,11 @@ resource "argocd_application" "loki" {
 
     source {
       repo_url        = "https://grafana.github.io/helm-charts"
-      chart           = "loki-stack"
-      target_revision = "2.10.2"
+      chart           = "promtail"
+      target_revision = "6.16.6"
       helm {
         release_name = "loki"
-        value_files = ["$values/modules/monitoring/loki-stack/values.yml"]
+        value_files = ["$values/modules/monitoring/promtail/values.yml"]
       }
     }
 
@@ -166,3 +207,46 @@ resource "argocd_application" "loki" {
     }
   }
 }
+
+# # Loki
+# resource "argocd_application" "loki_standalone" {
+#   depends_on = [argocd_application.grafana]
+#   metadata {
+#     name      = "loki"
+#     namespace = "argocd"
+#   }
+
+#   spec {
+#     destination {
+#       name = "in-cluster"
+#       namespace = "monitoring"
+#     }
+
+#     sync_policy {
+#         automated {
+#             self_heal = "true"
+#             prune = "true"
+#             allow_empty = "false"
+#         }
+#         sync_options = ["CreateNamespace=true"]
+#     }
+
+#     source {
+#       repo_url        = "https://grafana.github.io/helm-charts"
+#       chart           = "loki"
+#       target_revision = "6.19.0"
+#       helm {
+#         release_name = "loki"
+#         value_files = ["$values/modules/monitoring/loki/values.yml"]
+#       }
+#     }
+
+#     source {
+#       repo_url        = "https://github.com/BastienBYRA/homelab.git"
+#       target_revision = "feat/setup-monitoring"
+#       ref             = "values"
+#     }
+#   }
+# }
+
+# http://loki.monitoring.svc.cluster.local:3100
