@@ -173,9 +173,25 @@ resource "helm_release" "externaldns" {
 
 # ArgoCD
 resource "helm_release" "argocd" {
+  depends_on = [helm_release.externaldns]
   name       = "argocd"
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
   create_namespace = true
   namespace = "argocd"
+  values            = [
+    "${file("../modules/argocd/values.yaml")}"
+  ]
 }
+
+# # Kubernetes API
+# resource "helm_release" "kubeapi" {
+#   depends_on = [helm_release.externaldns]
+#   name              = "kubeapi"
+#   chart             = "../modules/kubeapi"
+#   create_namespace  = true
+#   namespace         = "kubeapi"
+#   values            = [
+#     "${file("../modules/kubeapi/values.yaml")}"
+#   ]
+# }

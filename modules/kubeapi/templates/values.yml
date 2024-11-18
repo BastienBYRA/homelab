@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubeapi-ingress
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: "{{ .Values.dns }}"
+    external-dns.alpha.kubernetes.io/ttl: "120"
+    external-dns.alpha.kubernetes.io/endpoints-type: "{{ .Values.server_ip }}"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # https://stackoverflow.com/questions/65540117/getting-all-hosts-are-taken-by-other-resources-with-nginx-ingress-controller
+    acme.cert-manager.io/http01-edit-in-place: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+      - "{{ .Values.dns }}"
+    secretName: kubeapi-tls
+  rules:
+  - host: "{{ .Values.dns }}"
+    http:
+      paths:
+      - backend:
+          service:
+            name: kubernetes
+            port:
+              number: 6443
+        path: /
+        pathType: Prefix

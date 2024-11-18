@@ -1,0 +1,40 @@
+server:
+  # service:
+  #   annotations: {
+  #       external-dns.alpha.kubernetes.io/hostname: argocd.bastienbyra.fr,
+  #       external-dns.alpha.kubernetes.io/ttl: "300",
+  #       external-dns.alpha.kubernetes.io/endpoints-type: "107.155.122.60",
+  #       cert-manager.io/cluster-issuer: "letsencrypt-staging",
+  #       acme.cert-manager.io/http01-edit-in-place: "true"
+  #   }
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostname: argocd.bastienbyra.fr
+    # extraRules:
+    #   - host: argocd.bastienbyra.fr
+    #     http:
+    #       paths:
+    #       - path: /
+    #         pathType: Prefix
+    #         backend:
+    #           service:
+    #             name: argocd-server
+    #             port:
+    #               number: 80
+    extraTls:
+      - hosts:
+          - "argocd.bastienbyra.fr"
+        secretName: argocd-cert-tls
+    annotations: {
+      external-dns.alpha.kubernetes.io/hostname: argocd.bastienbyra.fr,
+      external-dns.alpha.kubernetes.io/ttl: "300",
+      external-dns.alpha.kubernetes.io/endpoints-type: "107.155.122.60",
+      cert-manager.io/cluster-issuer: "letsencrypt-prod",
+      acme.cert-manager.io/http01-edit-in-place: "true"
+    }
+
+configs:
+  params:
+    # https://github.com/argoproj/argo-cd/issues/2953
+    server.insecure: true

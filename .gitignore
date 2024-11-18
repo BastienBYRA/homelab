@@ -6,6 +6,7 @@ credentials.yaml
 credentials.yml
 credential.yaml
 credential.yml
+.env
 
 # Terraform related stuffs
 .terraform*
