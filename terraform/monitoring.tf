@@ -9,6 +9,16 @@ resource "argocd_application" "ksm" {
     destination {
       name = "in-cluster"
       namespace = "monitoring"
+
+    }
+
+    sync_policy {
+        automated {
+            self_heal = "true"
+            prune = "true"
+            allow_empty = "false"
+        }
+        sync_options = ["CreateNamespace=true"]
     }
 
     source {
