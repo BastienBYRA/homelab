@@ -171,7 +171,7 @@ resource "argocd_application" "grafana" {
 resource "argocd_application" "promtail" {
   depends_on = [argocd_application.grafana]
   metadata {
-    name      = "loki"
+    name      = "promtail"
     namespace = "argocd"
   }
 
@@ -195,7 +195,7 @@ resource "argocd_application" "promtail" {
       chart           = "promtail"
       target_revision = "6.16.6"
       helm {
-        release_name = "loki"
+        release_name = "promtail"
         value_files = ["$values/modules/monitoring/promtail/values.yml"]
       }
     }
@@ -208,45 +208,45 @@ resource "argocd_application" "promtail" {
   }
 }
 
-# # Loki
-# resource "argocd_application" "loki_standalone" {
-#   depends_on = [argocd_application.grafana]
-#   metadata {
-#     name      = "loki"
-#     namespace = "argocd"
-#   }
+# Loki
+resource "argocd_application" "lokistandalone" {
+  depends_on = [argocd_application.promtail]
+  metadata {
+    name      = "lokistandalone"
+    namespace = "argocd"
+  }
 
-#   spec {
-#     destination {
-#       name = "in-cluster"
-#       namespace = "monitoring"
-#     }
+  spec {
+    destination {
+      name = "in-cluster"
+      namespace = "monitoring"
+    }
 
-#     sync_policy {
-#         automated {
-#             self_heal = "true"
-#             prune = "true"
-#             allow_empty = "false"
-#         }
-#         sync_options = ["CreateNamespace=true"]
-#     }
+    sync_policy {
+        automated {
+            self_heal = "true"
+            prune = "true"
+            allow_empty = "false"
+        }
+        sync_options = ["CreateNamespace=true"]
+    }
 
-#     source {
-#       repo_url        = "https://grafana.github.io/helm-charts"
-#       chart           = "loki"
-#       target_revision = "6.19.0"
-#       helm {
-#         release_name = "loki"
-#         value_files = ["$values/modules/monitoring/loki/values.yml"]
-#       }
-#     }
+    source {
+      repo_url        = "https://grafana.github.io/helm-charts"
+      chart           = "loki"
+      target_revision = "6.19.0"
+      helm {
+        release_name = "lokistandalone"
+        value_files = ["$values/modules/monitoring/loki/values.yml"]
+      }
+    }
 
-#     source {
-#       repo_url        = "https://github.com/BastienBYRA/homelab.git"
-#       target_revision = "feat/setup-monitoring"
-#       ref             = "values"
-#     }
-#   }
-# }
+    source {
+      repo_url        = "https://github.com/BastienBYRA/homelab.git"
+      target_revision = "feat/setup-monitoring"
+      ref             = "values"
+    }
+  }
+}
 
 # http://loki.monitoring.svc.cluster.local:3100
