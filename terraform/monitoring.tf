@@ -124,3 +124,45 @@ resource "argocd_application" "grafana" {
     }
   }
 }
+
+# Helm Loki Stack
+resource "argocd_application" "loki" {
+  depends_on = [argocd_application.grafana]
+  metadata {
+    name      = "loki"
+    namespace = "argocd"
+  }
+
+  spec {
+    destination {
+      name = "in-cluster"
+      namespace = "monitoring"
+
+    }
+
+    sync_policy {
+        automated {
+            self_heal = "true"
+            prune = "true"
+            allow_empty = "false"
+        }
+        sync_options = ["CreateNamespace=true"]
+    }
+
+    source {
+      repo_url        = "https://grafana.github.io/helm-charts"
+      chart           = "loki-stack"
+      target_revision = "2.10.2"
+      helm {
+        release_name = "loki"
+        value_files = ["$values/modules/monitoring/loki-stack/values.yml"]
+      }
+    }
+
+    source {
+      repo_url        = "https://github.com/BastienBYRA/homelab.git"
+      target_revision = "feat/setup-monitoring"
+      ref             = "values"
+    }
+  }
+}
