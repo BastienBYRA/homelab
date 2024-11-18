@@ -22,9 +22,10 @@ resource "argocd_application" "ksm" {
     }
 
     source {
-      repo_url        = "https://github.com/BastienBYRA/Kubernetes-argo-helm.git"
+      repo_url        = "https://github.com/BastienBYRA/homelab.git"
       target_revision = "HEAD"
       ref             = "values"
+      path            =  "modules/monitoring/prometheus/argo"
     }
   }
 }
