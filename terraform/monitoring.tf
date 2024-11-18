@@ -1,5 +1,6 @@
 # Helm: Kube state metrics
 resource "argocd_application" "ksm" {
+  depends_on = [helm_release.argocd]
   metadata {
     name      = "ksm"
     namespace = "argocd"
@@ -35,13 +36,14 @@ resource "argocd_application" "ksm" {
       repo_url        = "https://github.com/BastienBYRA/homelab.git"
       target_revision = "feat/setup-monitoring"
       ref             = "values"
-      path            =  "modules/monitoring/prometheus/argo"
+    #   path            =  "modules/monitoring/prometheus/argo"
     }
   }
 }
 
 # Helm Prometheus
 resource "argocd_application" "prometheus" {
+  depends_on = [argocd_application.ksm]
   metadata {
     name      = "prometheus"
     namespace = "argocd"
@@ -70,6 +72,48 @@ resource "argocd_application" "prometheus" {
       helm {
         release_name = "prometheus"
         value_files = ["$values/modules/monitoring/prometheus/values.yml"]
+      }
+    }
+
+    source {
+      repo_url        = "https://github.com/BastienBYRA/homelab.git"
+      target_revision = "feat/setup-monitoring"
+      ref             = "values"
+    }
+  }
+}
+
+# Helm Grafana
+resource "argocd_application" "grafana" {
+  depends_on = [argocd_application.ksm]
+  metadata {
+    name      = "grafana"
+    namespace = "argocd"
+  }
+
+  spec {
+    destination {
+      name = "in-cluster"
+      namespace = "monitoring"
+
+    }
+
+    sync_policy {
+        automated {
+            self_heal = "true"
+            prune = "true"
+            allow_empty = "false"
+        }
+        sync_options = ["CreateNamespace=true"]
+    }
+
+    source {
+      repo_url        = "https://grafana.github.io/helm-charts"
+      chart           = "grafana"
+      target_revision = "8.5.8"
+      helm {
+        release_name = "grafana"
+        value_files = ["$values/modules/monitoring/grafana/values.yml"]
       }
     }
 
