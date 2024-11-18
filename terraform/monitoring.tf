@@ -33,42 +33,50 @@ resource "argocd_application" "ksm" {
 
     source {
       repo_url        = "https://github.com/BastienBYRA/homelab.git"
-      target_revision = "HEAD"
+      target_revision = "feat/setup-monitoring"
       ref             = "values"
       path            =  "modules/monitoring/prometheus/argo"
     }
   }
 }
 
-
 # Helm Prometheus
-# resource "argocd_application" "prometheus" {
-#   metadata {
-#     name      = "prometheus"
-#     namespace = "argocd"
-#   }
+resource "argocd_application" "prometheus" {
+  metadata {
+    name      = "prometheus"
+    namespace = "argocd"
+  }
 
-#   spec {
-#     destination {
-#       name = "in-cluster"
-#       namespace = "monitoring"
-#     }
+  spec {
+    destination {
+      name = "in-cluster"
+      namespace = "monitoring"
 
-#     source {
-#       repo_url        = "https://prometheus-community.github.io/helm-charts"
-#       chart           = "prometheus"
-#       target_revision = "25.27.0"
-#       helm {
-#         release_name = "prometheus"
-#         value_files = ["../modules/monitoring/prometheus/chart/values.yml"]
-#       }
-#     }
+    }
 
-#     source {
-#       repo_url        = "https://github.com/BastienBYRA/Kubernetes-argo-helm.git"
-#       target_revision = "HEAD"
-#       ref             = "values"
-#     #   path            =  "modules/monitoring/prometheus/argo"
-#     }
-#   }
-# }
+    sync_policy {
+        automated {
+            self_heal = "true"
+            prune = "true"
+            allow_empty = "false"
+        }
+        sync_options = ["CreateNamespace=true"]
+    }
+
+    source {
+      repo_url        = "https://prometheus-community.github.io/helm-charts"
+      chart           = "prometheus"
+      target_revision = "25.27.0"
+      helm {
+        release_name = "prometheus"
+        value_files = ["$values/modules/monitoring/prometheus/values.yml"]
+      }
+    }
+
+    source {
+      repo_url        = "https://github.com/BastienBYRA/homelab.git"
+      target_revision = "feat/setup-monitoring"
+      ref             = "values"
+    }
+  }
+}
