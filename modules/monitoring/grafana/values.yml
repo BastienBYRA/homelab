@@ -14,6 +14,12 @@ datasources:
      url: http://prometheus-server.monitoring.svc.cluster.local
      access: proxy
      isDefault: true
+   - name: Loki
+     type: loki
+     url: http://lokistandalone.monitoring.svc.cluster.local:3100
+     access: proxy
+     isDefault: false
+     
   #  - name: VictoriaMetrics
   #    type: victoriametrics-datasource
   #    access: proxy
