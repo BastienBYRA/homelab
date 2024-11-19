@@ -499,12 +499,22 @@ config:
 
     scrapeConfigs: |
       # See also https://github.com/grafana/loki/blob/master/production/ksonnet/promtail/scrape_config.libsonnet for reference
-      - job_name: kubernetes-pods
+      - job_name: log_generator
         pipeline_stages:
           {{- toYaml .Values.config.snippets.pipelineStages | nindent 4 }}
         kubernetes_sd_configs:
           - role: pod
         relabel_configs:
+          # Exclure tous les namespaces sauf "monitoring"
+          - source_labels: [__meta_kubernetes_namespace]
+            regex: monitoring
+            action: keep
+          
+          # Inclure uniquement les pods dont le nom commence par "log-generator"
+          - source_labels: [__meta_kubernetes_pod_name]
+            regex: log-generator.*
+            action: keep
+
           - source_labels:
               - __meta_kubernetes_pod_controller_name
             regex: ([0-9a-z-.]+?)(-[0-9a-f]{8,10})?
