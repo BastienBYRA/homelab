@@ -1,0 +1,36 @@
+# ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: log-generator-script
+data:
+  logger.js: |
+{{ .Files.Get "files/logger.js" | indent 4 }}
+
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-generator
+  template:
+    metadata:
+      labels:
+        app: log-generator
+    spec:
+      containers:
+      - name: log-generator
+        image: node:18
+        command: ["node", "/usr/src/app/logger.js"]
+        volumeMounts:
+        - name: logger-script-volume
+          mountPath: /usr/src/app
+      volumes:
+      - name: logger-script-volume
+        configMap:
+          name: log-generator-script
