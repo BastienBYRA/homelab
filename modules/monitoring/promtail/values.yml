@@ -435,8 +435,8 @@ config:
   # This is especially helpful when multiple `kubernetes_sd_configs` are use which usually have large parts in common.
   # @default -- See `values.yaml`
   snippets:
-    pipelineStages:
-      - cri: {}
+    # pipelineStages:
+    #   - cri: {}
     common:
       - action: replace
         source_labels:
