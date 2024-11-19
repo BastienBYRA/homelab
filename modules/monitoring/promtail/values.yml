@@ -437,7 +437,7 @@ config:
   snippets:
     pipelineStages:
       - match:
-          selector: *
+          selector: {}
           stages:
             - regex:
                 # expression: '.*level=(?P<level>[a-zA-Z]+).*ts=(?P<timestamp>[T\d-:.Z]*).*component=(?P<component>[a-zA-Z]+)'
