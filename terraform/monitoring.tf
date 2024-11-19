@@ -197,6 +197,12 @@ resource "argocd_application" "promtail" {
       helm {
         release_name = "promtail"
         value_files = ["$values/modules/monitoring/promtail/values.yml"]
+
+        # Pour que l'argo application soit update s'il y a des changements dans le fichier values.yml
+        parameter {
+          name = "valueschecksum"
+          value = filemd5("../modules/monitoring/promtail/values.yml") 
+        }
       }
     }
 
@@ -238,6 +244,12 @@ resource "argocd_application" "lokistandalone" {
       helm {
         release_name = "lokistandalone"
         value_files = ["$values/modules/monitoring/loki/values.yml"]
+
+        # Pour que l'argo application soit update s'il y a des changements dans le fichier values.yml
+        parameter {
+          name = "valueschecksum"
+          value = filemd5("../modules/monitoring/loki/values.yml") 
+        }
       }
     }
 
