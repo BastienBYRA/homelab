@@ -48,6 +48,8 @@ loki:
     username: null
     # -- The basic auth password for the gateway
     password: null
+  commonConfig:
+    replication_factor: 1
 ######################################################################################################################
 #
 # Single Binary Deployment
