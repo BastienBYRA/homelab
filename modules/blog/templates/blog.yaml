@@ -53,9 +53,12 @@ kind: Ingress
 metadata:
   name: blog-ingress
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: "{{ .Values.dns_record }}"
-    external-dns.alpha.kubernetes.io/ttl: "120"
-    external-dns.alpha.kubernetes.io/endpoints-type: "{{ .Values.server_ip }}"
+    # ExternalDNS avec OVH ne fonctionne pas si on veut créer un record DNS avec uniquement le root domain
+    # https://github.com/kubernetes-sigs/external-dns/issues/2403
+ 
+    # external-dns.alpha.kubernetes.io/hostname: bastienbyra.fr
+    # external-dns.alpha.kubernetes.io/ttl: "120"
+    # external-dns.alpha.kubernetes.io/endpoints-type: "{{ .Values.server_ip }}"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     # https://stackoverflow.com/questions/65540117/getting-all-hosts-are-taken-by-other-resources-with-nginx-ingress-controller
@@ -65,7 +68,7 @@ spec:
   tls:
   - hosts:
       - "{{ .Values.dns }}"
-    secretName: blog-tls
+    secretName: blog-bastienbyra-tls
   rules:
   - host: "{{ .Values.dns }}"
     http:

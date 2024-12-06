@@ -1,0 +1,13 @@
+server:
+  global:
+    scrape_interval: 1m
+    scrape_timeout: 10s
+    evaluation_interval: 1m
+  # remoteWrite: 
+  #   - url: http://vm-rel-victoria-metrics-single-server.vm-ns.svc.cluster.local:8428/api/v1/write
+extraScrapeConfigs: |
+  - job_name: 'kube-state-metrics-release-helm'
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+        - kube-state-metrics.monitoring.svc.cluster.local:8080
