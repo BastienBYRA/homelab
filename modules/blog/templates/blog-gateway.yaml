@@ -1,0 +1,104 @@
+# # Deployment
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: blog
+#   labels:
+#     app: blog
+# spec:
+#   replicas: {{ .Values.replicas }}
+#   selector:
+#     matchLabels:
+#       app: blog
+#   template:
+#     metadata:
+#       labels:
+#         app: blog
+#     spec:
+#       containers:
+#       - name: blog
+#         image: "{{ .Values.image.name }}:{{ .Values.image.version }}"
+#         imagePullPolicy: Always
+#         env:
+#         - name: DNS_NAME
+#           value: "bastienbyra.fr"
+#         - name: POD_NAME
+#           valueFrom:
+#             fieldRef:
+#                 fieldPath: metadata.name
+#         - name: NAMESPACE
+#           valueFrom:
+#             fieldRef:
+#                 fieldPath: metadata.namespace
+#         ports:
+#         - containerPort: 80
+#           name: http
+#         - containerPort: 443
+#           name: https
+# ---
+# # Service
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: blog-service
+# spec:
+#   selector:
+#     app: blog
+#   type: ClusterIP
+#   ports:
+#   - name: http
+#     protocol: TCP
+#     port: 80
+#     targetPort: 80
+# ---
+# apiVersion: gateway.networking.k8s.io/v1
+# kind: Gateway
+# metadata:
+#   name: blog-gateway
+#   annotations:
+#     # ExternalDNS avec OVH ne fonctionne pas si on veut créer un record DNS avec uniquement le root domain
+#     # https://github.com/kubernetes-sigs/external-dns/issues/2403
+
+#     #   external-dns.alpha.kubernetes.io/hostname: "{{ .Values.dns }}"
+#     #   external-dns.alpha.kubernetes.io/ttl: "120"
+#     #   external-dns.alpha.kubernetes.io/endpoints-type: "{{ .Values.server_ip }}"
+#       cert-manager.io/cluster-issuer: "letsencrypt-gateway-staging"
+# spec:
+#   gatewayClassName: eg
+#   addresses:
+#   - type: IPAddress
+#     value: 107.155.122.60
+#   listeners:
+#     - name: http
+#       protocol: HTTP
+#       port: 80
+#     - name: https
+#       protocol: HTTPS
+#       port: 443
+#       hostname: "bastienbyra.fr"
+#       tls:
+#         certificateRefs:
+#         - kind: Secret
+#           group: ""
+#           name: bastienbyrafr-com-cert
+# ---
+# apiVersion: gateway.networking.k8s.io/v1
+# kind: HTTPRoute
+# metadata:
+#   name: blog-httproute
+# spec:
+#   parentRefs:
+#     - name: blog-gateway
+#   hostnames:
+#     - "bastienbyra.fr"
+#   rules:
+#     - backendRefs:
+#         - group: ""
+#           kind: Service
+#           name: blog-service
+#           port: 80
+#           weight: 1
+#       matches:
+#         - path:
+#             type: PathPrefix
+#             value: /

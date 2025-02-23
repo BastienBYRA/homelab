@@ -1,21 +1,18 @@
-apiVersion: gateway.networking.k8s.io/v1
-kind: GatewayClass
-metadata:
-  name: eg
-spec:
-  controllerName: gateway.envoyproxy.io/gatewayclass-controller
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: eg
+  name: gat-eg
   annotations:
-      external-dns.alpha.kubernetes.io/hostname: bastienbyra.fr
-      external-dns.alpha.kubernetes.io/ttl: "120"
-      external-dns.alpha.kubernetes.io/endpoints-type: "107.155.122.60"
+      # external-dns.alpha.kubernetes.io/hostname: testgateway.testgateway.bastienbyra.fr
+      # external-dns.alpha.kubernetes.io/ttl: "120"
+      # external-dns.alpha.kubernetes.io/endpoints-type: "107.155.122.60"
       cert-manager.io/cluster-issuer: "letsencrypt-gateway-production"
 spec:
   gatewayClassName: eg
+  addresses:
+  - type: IPAddress
+    value: 107.155.122.60
   listeners:
     - name: http
       protocol: HTTP
@@ -23,17 +20,12 @@ spec:
     - name: https
       protocol: HTTPS
       port: 443
-      hostname: bastienbyra.fr
+      hostname: testgateway.bastienbyra.fr
       tls:
         certificateRefs:
         - kind: Secret
           group: ""
-          name: testgateway-com-cert
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: backend
+          name: testgatewayaaa-com-cert
 ---
 apiVersion: v1
 kind: Service
@@ -89,9 +81,9 @@ metadata:
   name: backend
 spec:
   parentRefs:
-    - name: eg
+    - name: gat-eg
   hostnames:
-    - "bastienbyra.fr"
+    - "testgateway.bastienbyra.fr"
   rules:
     - backendRefs:
         - group: ""

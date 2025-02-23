@@ -194,6 +194,17 @@ resource "helm_release" "envoy-gateway" {
   create_namespace  = true
   namespace         = "envoy-gateway-system"
 }
+resource "helm_release" "envoy-gateway-class" {
+  depends_on = [helm_release.envoy-gateway]
+
+  name              = "envoy-gateway-class"
+  chart             = "../modules/envoy-gateway-class"
+  create_namespace  = true
+  namespace         = "envoy-gateway-system"
+  values            = [
+    "${file("../modules/envoy-gateway-class/values.yaml")}"
+  ]
+}
 
 
 
