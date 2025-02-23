@@ -1,0 +1,105 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: eg
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: eg
+  annotations:
+      external-dns.alpha.kubernetes.io/hostname: bastienbyra.fr
+      external-dns.alpha.kubernetes.io/ttl: "120"
+      external-dns.alpha.kubernetes.io/endpoints-type: "107.155.122.60"
+      cert-manager.io/cluster-issuer: "letsencrypt-gateway-production"
+spec:
+  gatewayClassName: eg
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: bastienbyra.fr
+      tls:
+        certificateRefs:
+        - kind: Secret
+          group: ""
+          name: testgateway-com-cert
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    app: backend
+    service: backend
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+  selector:
+    app: backend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: backend
+        version: v1
+    spec:
+      serviceAccountName: backend
+      containers:
+        - image: 8271/bbyra-website:8053d6556c4a43395ba304fd31bfa3116d0362c6
+          imagePullPolicy: IfNotPresent
+          name: backend
+          ports:
+            - containerPort: 80
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: backend
+spec:
+  parentRefs:
+    - name: eg
+  hostnames:
+    - "bastienbyra.fr"
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: backend
+          port: 80
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /

@@ -101,18 +101,99 @@ resource "kubernetes_manifest" "letsencrypt_issuer_staging" {
     }
   }
 }
-
-# NGINX Ingress Controller : Pour complémenter Cilium + Avoir un point d'accès
-resource "helm_release" "ingress-nginx" {
-  depends_on = [helm_release.cert-manager]
-  name              = "ingress-nginx"
-  repository        = "oci://ghcr.io/nginxinc/charts/"
-  chart             = "nginx-ingress"
-  version           = "1.4.1"
-  create_namespace  = true
-  namespace         = "ingress-nginx"
+resource "kubernetes_manifest" "letsencrypt_issuer_gateway_staging" {
+  manifest = {
+    "apiVersion" = "cert-manager.io/v1"
+    "kind"       = "ClusterIssuer"
+    "metadata" = {
+      "name" = "letsencrypt-gateway-staging"
+      # ClusterIssuer ne peut pas etre mis dans un namespace
+      # "namespace" = "cert-manager"
+    }
+    "spec" = {
+      "acme" = {
+        "server" = "https://acme-staging-v02.api.letsencrypt.org/directory"
+        "email"  = "byra.bastien@gmail.com"
+        "privateKeySecretRef" = {
+          "name" = "letsencrypt-gateway-staging"
+        }
+        "solvers" = [
+          {
+            "http01" = {
+              "gatewayHTTPRoute" = {
+                "parentRefs" = [
+                  {
+                    "namespace" = "default"
+                    "kind"  = "Gateway"                  # Type de ressource
+                    "name"  = "eg"               # Nom de la Gateway
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+resource "kubernetes_manifest" "letsencrypt_issuer_gateway_production" {
+  manifest = {
+    "apiVersion" = "cert-manager.io/v1"
+    "kind"       = "ClusterIssuer"
+    "metadata" = {
+      "name" = "letsencrypt-gateway-production"
+      # ClusterIssuer ne peut pas etre mis dans un namespace
+      # "namespace" = "cert-manager"
+    }
+    "spec" = {
+      "acme" = {
+        "server" = "https://acme-v02.api.letsencrypt.org/directory"
+        "email"  = "byra.bastien@gmail.com"
+        "privateKeySecretRef" = {
+          "name" = "letsencrypt-gateway-production"
+        }
+        "solvers" = [
+          {
+            "http01" = {
+              "gatewayHTTPRoute" = {
+                "parentRefs" = [
+                  {
+                    "namespace" = "default"
+                    "kind"  = "Gateway"                  # Type de ressource
+                    "name"  = "eg"               # Nom de la Gateway
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
 }
 
+
+# NGINX Ingress Controller : Pour complémenter Cilium + Avoir un point d'accès
+# resource "helm_release" "ingress-nginx" {
+#   depends_on = [helm_release.cert-manager]
+#   name              = "ingress-nginx"
+#   repository        = "oci://ghcr.io/nginxinc/charts/"
+#   chart             = "nginx-ingress"
+#   version           = "1.4.1"
+#   create_namespace  = true
+#   namespace         = "ingress-nginx"
+# }
+
+
+resource "helm_release" "envoy-gateway" {
+  depends_on = [helm_release.cert-manager]
+  name              = "envoy-gateway"
+  repository        = "oci://docker.io/envoyproxy/"
+  chart             = "gateway-helm"
+  version           = "v1.3.0"
+  create_namespace  = true
+  namespace         = "envoy-gateway-system"
+}
 
 
 
@@ -120,8 +201,8 @@ resource "helm_release" "ingress-nginx" {
 ### /!\ Le secret est sur mon PC local, (pour l'instant)
 ### /!\ Besoin d'un namespace pour s'assurer que le namespace existe avant d'ajouter le secret dedans
 resource "kubernetes_namespace" "externaldns_namespace" {
-  depends_on = [helm_release.ingress-nginx]
-  # depends_on = [helm_release.cilium]
+  # depends_on = [helm_release.ingress-nginx]
+  depends_on = [helm_release.envoy-gateway]
   metadata {
     annotations = {
       name = "externaldns"
@@ -148,7 +229,7 @@ resource "helm_release" "externaldns" {
   name              = "externaldns"
   repository        = "https://kubernetes-sigs.github.io/external-dns/"
   chart             = "external-dns"
-  version           = "1.15.0"
+  version           = "1.15.2"
   create_namespace  = true
   namespace         = "externaldns"
   values            = [
@@ -172,17 +253,17 @@ resource "helm_release" "externaldns" {
 # }
 
 # ArgoCD
-resource "helm_release" "argocd" {
-  depends_on = [helm_release.externaldns]
-  name       = "argocd"
-  repository = "https://argoproj.github.io/argo-helm"
-  chart      = "argo-cd"
-  create_namespace = true
-  namespace = "argocd"
-  values            = [
-    "${file("../modules/argocd/values.yaml")}"
-  ]
-}
+# resource "helm_release" "argocd" {
+#   depends_on = [helm_release.externaldns]
+#   name       = "argocd"
+#   repository = "https://argoproj.github.io/argo-helm"
+#   chart      = "argo-cd"
+#   create_namespace = true
+#   namespace = "argocd"
+#   values            = [
+#     "${file("../modules/argocd/values.yaml")}"
+#   ]
+# }
 
 # # Kubernetes API
 # resource "helm_release" "kubeapi" {

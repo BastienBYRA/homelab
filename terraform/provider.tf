@@ -16,8 +16,8 @@ terraform {
   }
 }
 
-provider "argocd" {
-  server_addr = "argocd.bastienbyra.fr:443"
-  username = var.ARGOCD_USERNAME
-  password = var.ARGOCD_PASSWORD
-}
+# provider "argocd" {
+#   server_addr = "argocd.bastienbyra.fr:443"
+#   username = var.ARGOCD_USERNAME
+#   password = var.ARGOCD_PASSWORD
+# }
