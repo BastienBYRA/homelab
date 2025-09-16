@@ -1,0 +1,87 @@
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: headlamp.bastienbyra.fr
+    external-dns.alpha.kubernetes.io/ttl: "300"
+    external-dns.alpha.kubernetes.io/endpoints-type: "107.155.122.60"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    acme.cert-manager.io/http01-edit-in-place: "true"
+  hosts:
+    - host: headlamp.bastienbyra.fr
+      paths:
+        - path: /
+          type: Prefix
+  tls:
+    - secretName: headlamp.bastienbyra.fr-tls
+      hosts:
+        - headlamp.bastienbyra.fr
+
+# ingress:
+#   # -- Enable ingress controller resource
+#   enabled: false
+#   # -- Annotations for Ingress resource
+#   annotations:
+#     {}
+#     # kubernetes.io/tls-acme: "true"
+
+#   # -- Additional labels to add to the Ingress resource
+#   labels: {}
+#     # app.kubernetes.io/part-of: traefik
+#     # environment: prod
+
+#   # -- Ingress class name. replacement for the deprecated "kubernetes.io/ingress.class" annotation
+#   ingressClassName: ""
+
+#   # -- Hostname(s) for the Ingress resource
+#   # Please refer to https://kubernetes.io/docs/reference/kubernetes-api/service-resources/ingress-v1/#IngressSpec for more information.
+#   hosts:
+#     []
+#     # - host: chart-example.local
+#     #   paths:
+#     #   - path: /
+#     #     type: ImplementationSpecific
+#   # -- Ingress TLS configuration
+#   tls: []
+#   #  - secretName: chart-example-tls
+#   #    hosts:
+#   #      - chart-example.local
+
+# # -- CPU/Memory resource requests/limits
+# resources:
+#   {}
+#   # We usually recommend not to specify default resources and to leave this as a conscious
+#   # choice for the user. This also increases chances charts run on environments with little
+#   # resources, such as Minikube. If you do want to specify resources, uncomment the following
+#   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+#   # limits:
+#   #   cpu: 100m
+#   #   memory: 128Mi
+#   # requests:
+#   #   cpu: 100m
+#   #   memory: 128Mi
+
+# # -- Node labels for pod assignment
+# nodeSelector: {}
+
+# # -- Toleration labels for pod assignment
+# tolerations: []
+
+# # -- Affinity settings for pod assignment
+# affinity: {}
+
+# # -- Additional Kubernetes manifests to be deployed. Include the manifest as nested YAML.
+# extraManifests: []
+# # - apiVersion: v1
+# #   kind: ConfigMap
+# #   metadata:
+# #     name: my-config
+# #   data:
+# #     key: value
+# # - apiVersion: v1
+# #   kind: ConfigMap
+# #   metadata:
+# #     name: my-config-too
+# #   data:
+# #     key: value
+

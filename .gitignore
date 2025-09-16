@@ -11,3 +11,6 @@ credential.yml
 # Terraform related stuffs
 .terraform*
 terraform.tfstate*
+
+# SSH stuffs
+sshkey*

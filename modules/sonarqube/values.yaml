@@ -1,0 +1,25 @@
+community:
+  enabled: true
+
+monitoringPasscode: 9Sr8Pzkq0tif
+
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  hosts:
+    - name: sonarqube.bastienbyra.fr
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: sonarqube.bastienbyra.fr
+    external-dns.alpha.kubernetes.io/ttl: "300"
+    external-dns.alpha.kubernetes.io/endpoints-type: "107.155.122.60"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    acme.cert-manager.io/http01-edit-in-place: "true"
+  tls:
+  - secretName: sonarqube.bastienbyra.fr-tls
+    hosts:
+      - sonarqube.bastienbyra.fr
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 6144M

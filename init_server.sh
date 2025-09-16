@@ -2,12 +2,37 @@
 
 set -e
 
+# Section Help du script
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]
+then
+  echo "Ce script permet de configurer un serveur Linux, et d'installer Kubernetes (et plus encore)"
+  echo "Lien du projet GitHub pour plus de détail: https://github.com/BastienBYRA/homelab"
+  echo ""
+  echo "Variables d'environnements :"
+  echo ""
+  echo "    USER_PASSWORD: Mot de passe donné aux utilisateurs défini dans la variable user_list (ligne 22 du script)"
+  echo "                   Utilisateur par défaut : bastien"
+  echo "                   Mot de passe par défaut : Aucun, à définir !"
+  echo ""
+  echo "    K8S_DISTRIBUTION: Nom de la distribution Kubernetes à installer."
+  echo "                      Valeur : rke2 (défaut), k3s"
+  exit 0
+fi
+
 user_list=("bastien")
 
 if [ -z "$USER_PASSWORD" ]
 then
       echo "Aucun mot de passe défini pour l'utilisateur à créer, défini un mot de passe sous forme de variable d'env sur la machine !"
       exit 1
+fi
+
+k8s_distribution="rke2"
+if [ -z "$K8S_DISTRIBUTION" ]
+then
+      k8s_distribution="rke2"
+else
+      k8s_distribution=$(echo "${K8S_DISTRIBUTION}" | tr '[:upper:]' '[:lower:]')
 fi
 
 function create_user() {
@@ -17,7 +42,7 @@ function create_user() {
   # Créer un utilisateur / mot de passe / home folder
   sudo useradd $username -G docker,ssh_group,sudo
   echo $username:$password | chpasswd         # Ajoute un mot de passe
-  sudo usermod --shell /bin/bash $password         # Défini bash comme le shell par défaut
+  sudo usermod --shell /bin/bash $username    # Défini bash comme le shell par défaut
   mkdir /home/$username                       # Génère le dossier home de l'utilisateur
   fix_owner_folder $username
 }
@@ -68,7 +93,7 @@ function hardening_ssh() {
 }
 
 # Fonction pour vérifier, modifier ou ajouter une configuration
-update_or_add_config() {
+function update_or_add_config() {
     key="$1"
     value="$2"
     config_file="$3"
@@ -85,57 +110,116 @@ update_or_add_config() {
 function add_kubeconfig() {
   user=$1
   mkdir /home/$username/.kube
-  sudo cp /etc/rancher/k3s/k3s.yaml /home/$user/.kube/config
+
+  if [ $k8s_distribution = "rke2" ]
+  then
+    sudo cp /etc/rancher/rke2/rke2.yaml /home/$user/.kube/config
+  elif [ $k8s_distribution = "k3s" ]
+  then
+    sudo cp /etc/rancher/k3s/k3s.yaml /home/$user/.kube/config
+  else
+    echo "Aucune méthode d'installation trouvé pour la distribution Kubernetes : $k8s_distribution"
+    echo "Ci-joint les méthodes existantes : rke2, k3s"
+    exit 1
+  fi
+
   sudo chown $user:$user /home/$user/.kube/config
   echo "export KUBECONFIG=/home/$user/.kube/config" >> /home/$user/.bashrc
   fix_owner_folder $username
+}
+
+function update_vm() {
+  # Installe les outils de base
+  sudo apt-get update
+  sudo apt-get install -y nano curl git
+}
+
+function install_docker() {
+  # Installe Docker
+  echo "➜ Installation de Docker en cours !"
+  sudo apt-get update
+  sudo apt-get install ca-certificates curl
+  sudo install -m 0755 -d /etc/apt/keyrings
+  sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  sudo chmod a+r /etc/apt/keyrings/docker.asc
+  echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  sudo apt-get update
+  sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+  echo "➜ Installation de Docker fini !"
+}
+
+function install_k3s () {
+  # Installe K3S
+  echo "➜ Installation de K3S en cours !"
+  curl -sfL https://get.k3s.io | sh -s - \
+    --flannel-backend=none \
+    --disable-network-policy \
+    --disable traefik
+  echo "➜ Installation de K3S fini !"
+  echo "⚠️ Copie le Kubeconfig pour pouvoir y accéder depuis ton PC :"
+  cat /etc/rancher/k3s/k3s.yaml
+}
+
+function install_rke2() {
+  echo "➜ Installation de RKE2 en cours !"
+  curl -sfL https://get.rke2.io | sh -
+  systemctl enable rke2-server.service
+  systemctl start rke2-server.service
+  echo "➜ Installation de RKE2 fini !"
+  echo "⚠️ Copie le Kubeconfig pour pouvoir y accéder depuis ton PC :"
+  cat /etc/rancher/rke2/rke2.yaml
+}
+
+function install_cilium() {
+  # Installe Cilium
+  CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
+  CLI_ARCH=amd64
+  if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
+  curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+  sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
+  sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
+  rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+}
+
+function install_k8s() {
+  if [ $k8s_distribution = "rke2" ]
+  then
+    install_rke2
+  elif [ $k8s_distribution = "k3s" ]
+  then
+    install_k3s
+    install_cilium
+  else
+    echo "Aucune méthode d'installation trouvé pour la distribution Kubernetes : $k8s_distribution"
+    echo "Ci-joint les méthodes existantes : rke2, k3s"
+    exit 1
+  fi
+}
+
+function install_k9s() {
+  wget https://github.com/derailed/k9s/releases/latest/download/k9s_linux_amd64.deb && apt install ./k9s_linux_amd64.deb && rm k9s_linux_amd64.deb
 }
 
 #################################
 ####### INIT SERVER TOOLS #######
 ################################# 
 
-# Installe les outils de base
-sudo apt-get update
-sudo apt-get install -y nano curl git
+# Update les dépendances de la VM
+update_vm
 
 # Installe Docker
-echo "➜ Installation de Docker en cours !"
-sudo apt-get update
-sudo apt-get install ca-certificates curl
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
-sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
-echo "➜ Installation de Docker fini !"
+install_docker
 
-# Installe K3S
-echo "➜ Installation de K3S en cours !"
-curl -sfL https://get.k3s.io | sh -s - \
-  --flannel-backend=none \
-  --disable-network-policy \
-  --disable traefik
-echo "➜ Installation de K3S fini !"
-echo "⚠️ Copie le Kubeconfig pour pouvoir y accéder depuis ton PC :"
-cat /etc/rancher/k3s/k3s.yaml
+# Installe une distribution Kubernetes (RKE2 par défaut)
+# Pour changer, définir la valeur K8S_DISTRIBUTION au lancement du script (eg. K8S_DISTRIBUTION=k3s)
+install_k8s
 
-# Installe Cilium
-CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
-CLI_ARCH=amd64
-if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
-curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
-sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
-sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
-rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
-
-##################################
-######## HARDENING SERVER ########
-##################################
+# ##################################
+# ######## HARDENING SERVER ########
+# ##################################
 
 # Créer un groupe spécial pour les utilisateurs qui pourront SSH sur le serveur
 groupadd ssh_group
@@ -151,6 +235,3 @@ for user in ${user_list[@]}; do
   add_kubeconfig $user
   echo "➜ Création de l'utilisateur $user fini !"
 done
-
-
-
